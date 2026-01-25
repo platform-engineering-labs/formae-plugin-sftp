@@ -6,7 +6,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/pkg/sftp v1.13.10
 	github.com/platform-engineering-labs/formae/pkg/plugin v0.1.1
-	github.com/platform-engineering-labs/formae/pkg/plugin-conformance-tests v0.1.1
+	github.com/platform-engineering-labs/formae/pkg/plugin-conformance-tests v0.1.3
 	github.com/stretchr/testify v1.11.1
 	golang.org/x/crypto v0.47.0
 )
