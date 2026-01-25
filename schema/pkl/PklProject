@@ -1,0 +1,16 @@
+amends "pkl:Project"
+
+// Local package configuration for development.
+// The baseUri is just an identifier - actual resolution uses local paths.
+package {
+  name = "sftp"
+  baseUri = "package://localhost/sftp"
+  version = "0.1.0"
+  packageZipUrl = "https://localhost/sftp@\(version).zip"
+}
+
+dependencies {
+  ["formae"] {
+    uri = "package://hub.platform.engineering/plugins/pkl/schema/pkl/formae/formae@0.77.15-internal"
+  }
+}

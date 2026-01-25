@@ -1,0 +1,43 @@
+// © 2025 Platform Engineering Labs Inc.
+//
+// SPDX-License-Identifier: FSL-1.1-ALv2
+
+module sftp
+
+import "@formae/formae.pkl"
+
+/// Target configuration for SFTP servers.
+open class Config {
+    /// Type identifier for the SFTP plugin namespace.
+    hidden fixed type: String = "SFTP"
+
+    /// SFTP server URL (e.g., "sftp://localhost:2222")
+    url: String
+
+    fixed Type: String = type
+    fixed Url: String = url
+}
+
+/// A text file on an SFTP server.
+@formae.ResourceHint {
+    type = "SFTP::Files::File"
+    identifier = "$.path"
+    discoverable = true
+}
+class File extends formae.Resource {
+    fixed hidden type: String = "SFTP::Files::File"
+
+    /// Path to the file on the SFTP server.
+    /// Cannot be changed after creation - changing the path means a different file.
+    @formae.FieldHint { createOnly = true }
+    path: String
+
+    /// Text content of the file.
+    @formae.FieldHint {}
+    content: String
+
+    /// Unix file permissions (e.g., "0644", "0755").
+    /// Defaults to "0644" if not specified.
+    @formae.FieldHint { createOnly = true }
+    permissions: String = "0644"
+}

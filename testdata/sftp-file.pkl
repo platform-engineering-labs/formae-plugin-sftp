@@ -1,0 +1,34 @@
+// © 2025 Platform Engineering Labs Inc.
+//
+// SPDX-License-Identifier: FSL-1.1-ALv2
+
+amends "@formae/forma.pkl"
+import "@formae/formae.pkl"
+
+import "@sftp/sftp.pkl"
+
+// Read the test run ID from environment variable set by the test harness
+// This ensures consistent naming within a test run but unique names between runs
+local testRunID = read("env:FORMAE_TEST_RUN_ID")
+local stackName = "plugin-sdk-test-sftp-file-\(testRunID)"
+
+forma {
+  new formae.Stack {
+    label = stackName
+    description = "Plugin SDK test for SFTP File"
+  }
+
+  new formae.Target {
+    label = "sftp-target"
+    config = new sftp.Config {
+      url = "sftp://localhost:2222"
+    }
+  }
+
+  new sftp.File {
+    label = "plugin-sdk-test-file"
+    path = "/upload/formae-plugin-sdk-test-\(testRunID).txt"
+    content = "Hello from conformance test"
+    permissions = "0644"
+  }
+}
