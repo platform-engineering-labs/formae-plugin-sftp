@@ -1,46 +1,31 @@
 /*
- * Basic Example
+ * Basic SFTP Example
  *
- * This example shows how to define resources using your plugin.
- * Run with: formae apply --mode reconcile --watch examples/basic/main.pkl
+ * This example shows how to manage files on an SFTP server.
+ * Run with: formae apply --mode reconcile main.pkl
  */
 amends "@formae/forma.pkl"
 
 import "@formae/formae.pkl"
-import "@example/example.pkl"
+import "@sftp/sftp.pkl"
 
 forma {
   new formae.Stack {
-    label = "default"
-    description = "Default stack for example resources"
+    label = "local-test"
+    description = "Local testing stack"
   }
 
   new formae.Target {
-    label = "my-target"
-    namespace = "SFTP"
-    // Add your provider-specific configuration here
-    // For typed config, create a Config class in your schema:
-    //   config = new example.Config { region = "us-east-1" }
-    config = new Mapping {
-      ["region"] = "us-east-1"
+    label = "sftp-local"
+    config = new sftp.Config {
+      url = "sftp://localhost:2222"
     }
   }
 
-  new example.ExampleResource {
-    label = "my-resource"
-    name = "My Example Resource"
-    description = "This is an example resource"
-    region = "us-east-1"
-
-    endpoint = new example.Endpoint {
-      url = "https://api.example.com"
-      port = 8080
-      protocol = "https"
-    }
-
-    tags = new Listing {
-      new example.Tag { key = "Environment"; value = "development" }
-      new example.Tag { key = "Team"; value = "platform" }
-    }
+  new sftp.File {
+    label = "hello"
+    path = "/upload/hello.txt"
+    content = "Hello from formae!"
+    permissions = "0644"
   }
 }

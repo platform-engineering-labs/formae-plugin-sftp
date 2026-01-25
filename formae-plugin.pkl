@@ -1,27 +1,19 @@
 /*
  * Formae Plugin Manifest
  *
- * This file defines metadata for your Formae plugin.
- * Update the values below to match your plugin.
+ * This file defines metadata for the SFTP plugin.
  */
 
-// TODO: Change to your plugin name (lowercase, letters/numbers/hyphens)
 name = "sftp"
 
-// TODO: Update version following semver
 version = "0.1.0"
 
-// TODO: Resource type namespace prefix (uppercase)
-// This appears in resource types: SFTP::Service::Resource
 namespace = "SFTP"
 
-// TODO: Describe what your plugin does
 description = "SFTP file management plugin for formae"
 
-// TODO: Your license (SPDX identifier)
 license = "FSL-1.1-ALv2"
 
-// TODO: Minimum formae version required
 minFormaeVersion = "0.80.0"
 
 output {

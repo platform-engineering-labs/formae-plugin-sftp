@@ -1,59 +1,31 @@
-<!-- ============================================================================
-     TEMPLATE CHECKLIST - Remove this entire block after completing setup
-     ============================================================================
+# SFTP Plugin for formae
 
-## Getting Started
-
-After creating your plugin with `formae plugin init`, complete these steps:
-
-- [ ] Update `formae-plugin.pkl` with your plugin metadata (name, namespace, description)
-- [ ] Define your resource types in `schema/pkl/*.pkl`
-- [ ] Implement CRUD operations in `plugin.go`
-- [ ] Update this README (see below - replace title, description, resources, etc.)
-- [ ] Set up local credentials for testing (see Development section)
-- [ ] Run conformance tests locally: `make conformance-test`
-- [ ] Configure CI credentials in `.github/workflows/ci.yml` (optional)
-- [ ] Remove this "Getting Started" checklist section
-
-For detailed guidance, see the [Plugin SDK Documentation](https://docs.formae.io/plugin-sdk).
-
-     ============================================================================
-     END TEMPLATE CHECKLIST - Everything below is YOUR plugin's README
-     ============================================================================ -->
-
-# Example Plugin for Formae
-
-<!-- TODO: Update title and description for your plugin -->
-
-Example Formae plugin template - replace this with a description of what your plugin manages.
+A formae plugin for managing files on SFTP servers. This plugin was created as part of the [Plugin SDK Tutorial](https://docs.formae.io/plugin-sdk/tutorial/01-scaffold/).
 
 ## Installation
 
 ```bash
-# Install the plugin
 make install
 ```
 
 ## Supported Resources
 
-<!-- TODO: Document your supported resource types -->
-
 | Resource Type | Description |
 |---------------|-------------|
-| `SFTP::Service::Resource` | Example resource (replace with your actual resources) |
+| `SFTP::Files::File` | Manages files on an SFTP server |
 
 ## Configuration
 
-Configure a target in your Forma file:
+Configure a target in your forma file:
 
 ```pkl
+import "@sftp/sftp.pkl"
+
 new formae.Target {
-    label = "my-target"
-    namespace = "SFTP"  // TODO: Update with your namespace
-    config = new Mapping {
-        ["region"] = "us-east-1"
-        // TODO: Add your provider-specific configuration
-    }
+  label = "sftp-server"
+  config = new sftp.Config {
+    url = "sftp://hostname:22"
+  }
 }
 ```
 
@@ -61,12 +33,20 @@ new formae.Target {
 
 See the [examples/](examples/) directory for usage examples.
 
-```bash
-# Evaluate an example
-formae eval examples/basic/main.pkl
+```pkl
+import "@sftp/sftp.pkl"
 
+new sftp.File {
+  label = "hello"
+  path = "/upload/hello.txt"
+  content = "Hello from formae!"
+  permissions = "0644"
+}
+```
+
+```bash
 # Apply resources
-formae apply --mode reconcile --watch examples/basic/main.pkl
+formae apply --mode reconcile examples/basic/main.pkl
 ```
 
 ## Development
@@ -75,7 +55,7 @@ formae apply --mode reconcile --watch examples/basic/main.pkl
 
 - Go 1.25+
 - [Pkl CLI](https://pkl-lang.org/main/current/pkl-cli/index.html)
-- Cloud provider credentials (for conformance testing)
+- SFTP server for testing
 
 ### Building
 
@@ -89,29 +69,32 @@ make install    # Build + install locally
 ### Local Testing
 
 ```bash
+# Start test SFTP server
+docker run -d --name sftp-test -p 2222:22 atmoz/sftp testuser:testpass:::upload
+
 # Install plugin locally
 make install
 
 # Start formae agent
-formae agent start
+SFTP_USERNAME=testuser SFTP_PASSWORD=testpass formae agent start
 
 # Apply example resources
-formae apply --mode reconcile --watch examples/basic/main.pkl
+formae apply --mode reconcile examples/basic/main.pkl
+
+# Clean up
+docker rm -f sftp-test
 ```
 
-### Credentials Setup
+### Credentials
 
-The `scripts/ci/setup-credentials.sh` script is used for **local development** to verify your cloud credentials are configured correctly before running conformance tests.
+The plugin reads SFTP credentials from environment variables:
 
-```bash
-# Verify credentials are configured
-./scripts/ci/setup-credentials.sh
+| Variable | Description |
+|----------|-------------|
+| `SFTP_USERNAME` | SFTP username |
+| `SFTP_PASSWORD` | SFTP password |
 
-# Run conformance tests (calls setup-credentials automatically)
-make conformance-test
-```
-
-**For CI/CD**, configure credentials differently using GitHub secrets or OIDC. See `.github/workflows/ci.yml` for examples with AWS, Azure, GCP, and OpenStack.
+Set these environment variables before starting the formae agent.
 
 ### Conformance Testing
 
@@ -122,8 +105,6 @@ make conformance-test                  # Latest formae version
 make conformance-test VERSION=0.80.0   # Specific version
 ```
 
-The `scripts/ci/clean-environment.sh` script cleans up test resources. It runs before and after conformance tests and should be idempotent.
-
 ## License
 
-This plugin is licensed under [Apache-2.0](LICENSE). <!-- TODO: Update with your chosen license -->
+This plugin is licensed under [FSL-1.1-ALv2](LICENSE).
