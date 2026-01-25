@@ -42,30 +42,29 @@ if ! command -v sshpass &> /dev/null; then
     exit 0
 fi
 
-# Create a batch file for sftp commands
-BATCH_FILE=$(mktemp)
-trap "rm -f $BATCH_FILE" EXIT
-
-# List files and generate delete commands
-echo "cd ${SFTP_DIRECTORY}" > "$BATCH_FILE"
-echo "ls -1" >> "$BATCH_FILE"
-
-# Get list of files
-FILES=$(sshpass -p "$SFTP_PASSWORD" sftp -P "$SFTP_PORT" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -b "$BATCH_FILE" "${SFTP_USERNAME}@${SFTP_HOST}" 2>/dev/null | grep "^${TEST_PREFIX}" || true)
+# Get list of files using heredoc (batch mode -b doesn't work with sshpass)
+FILES=$(sshpass -p "$SFTP_PASSWORD" sftp -P "$SFTP_PORT" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "${SFTP_USERNAME}@${SFTP_HOST}" 2>/dev/null <<EOF | grep "^${TEST_PREFIX}" || true
+cd ${SFTP_DIRECTORY}
+ls -1
+EOF
+)
 
 if [[ -z "$FILES" ]]; then
     echo "No test files found with prefix '${TEST_PREFIX}'"
     exit 0
 fi
 
-# Create delete commands
-echo "cd ${SFTP_DIRECTORY}" > "$BATCH_FILE"
+# Build delete commands
+DELETE_COMMANDS="cd ${SFTP_DIRECTORY}"
 while IFS= read -r file; do
-    echo "rm \"$file\"" >> "$BATCH_FILE"
+    DELETE_COMMANDS="${DELETE_COMMANDS}
+rm \"$file\""
     echo "  Deleting: $file"
 done <<< "$FILES"
 
-# Execute delete commands
-sshpass -p "$SFTP_PASSWORD" sftp -P "$SFTP_PORT" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -b "$BATCH_FILE" "${SFTP_USERNAME}@${SFTP_HOST}" 2>/dev/null || true
+# Execute delete commands using heredoc
+sshpass -p "$SFTP_PASSWORD" sftp -P "$SFTP_PORT" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "${SFTP_USERNAME}@${SFTP_HOST}" 2>/dev/null <<EOF || true
+${DELETE_COMMANDS}
+EOF
 
 echo "clean-environment.sh: Cleanup complete"
