@@ -69,12 +69,9 @@ jobs:
           echo "Manifest validated successfully"
 
   # Integration tests run against real infrastructure.
-  # This job is disabled by default - enable it after configuring credentials.
   integration-tests:
     needs: [build, lint]
     runs-on: ubuntu-latest
-    # Disabled by default - remove this condition after configuring credentials
-    if: false
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -89,35 +86,22 @@ jobs:
         with:
           pkl-version: 0.30.0
 
-      # Configure credentials for your infrastructure here
-      # Example for SFTP:
-      # env:
-      #   SFTP_USERNAME: ${{ secrets.SFTP_USERNAME }}
-      #   SFTP_PASSWORD: ${{ secrets.SFTP_PASSWORD }}
+      - name: Start SFTP server
+        run: |
+          docker run -d --name sftp-test -p 2222:22 atmoz/sftp testuser:testpass:::upload
+          sleep 2  # Wait for server to start
 
       - name: Run integration tests
+        env:
+          SFTP_USERNAME: testuser
+          SFTP_PASSWORD: testpass
         run: make test-integration
 
-  # Conformance tests run against real cloud resources.
-  # This job is disabled by default - enable it after configuring credentials.
-  #
-  # To enable:
-  # 1. Configure credentials for your cloud provider (see below)
-  # 2. Implement scripts/ci/setup-credentials.sh for local credential verification
-  # 3. Implement scripts/ci/clean-environment.sh for test resource cleanup
-  # 4. Remove 'if: false' condition or set run_conformance to true
+  # Conformance tests verify the plugin works correctly with the formae agent.
   conformance-tests:
-    needs: [build, lint, pkl-validate]
+    needs: [build, lint, pkl-validate, integration-tests]
     runs-on: ubuntu-latest
-    # Disabled by default - uncomment 'if' line below after configuring credentials
-    if: ${{ github.event.inputs.run_conformance == 'true' }}
     timeout-minutes: 60
-
-    # Uncomment and configure for your cloud provider:
-    # permissions:
-    #   id-token: write  # Required for OIDC
-    #   contents: read
-
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -132,47 +116,17 @@ jobs:
         with:
           pkl-version: 0.30.0
 
-      # =================================================================
-      # CREDENTIAL SETUP - Uncomment and configure for your provider
-      # =================================================================
-
-      # AWS (OIDC - recommended)
-      # - name: Configure AWS Credentials
-      #   uses: aws-actions/configure-aws-credentials@v4
-      #   with:
-      #     aws-region: us-east-1
-      #     role-to-assume: arn:aws:iam::ACCOUNT_ID:role/ROLE_NAME
-      #     role-session-name: ConformanceTests
-
-      # Azure (OIDC - recommended)
-      # - name: Configure Azure Credentials
-      #   uses: azure/login@v2
-      #   with:
-      #     client-id: ${{ secrets.AZURE_CLIENT_ID }}
-      #     tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-      #     subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-
-      # GCP (OIDC - recommended)
-      # - name: Configure GCP Credentials
-      #   uses: google-github-actions/auth@v2
-      #   with:
-      #     workload_identity_provider: projects/PROJECT_ID/locations/global/workloadIdentityPools/POOL/providers/PROVIDER
-      #     service_account: SA_NAME@PROJECT_ID.iam.gserviceaccount.com
-
-      # OpenStack (secrets-based)
-      # - name: Configure OpenStack Credentials
-      #   run: |
-      #     echo "OS_AUTH_URL=${{ secrets.OS_AUTH_URL }}" >> $GITHUB_ENV
-      #     echo "OS_USERNAME=${{ secrets.OS_USERNAME }}" >> $GITHUB_ENV
-      #     echo "OS_PASSWORD=${{ secrets.OS_PASSWORD }}" >> $GITHUB_ENV
-      #     echo "OS_PROJECT_ID=${{ secrets.OS_PROJECT_ID }}" >> $GITHUB_ENV
-
-      # =================================================================
+      - name: Start SFTP server
+        run: |
+          docker run -d --name sftp-test -p 2222:22 atmoz/sftp testuser:testpass:::upload
+          sleep 2  # Wait for server to start
 
       - name: Install plugin
         run: make install
 
       - name: Run conformance tests
         env:
+          SFTP_USERNAME: testuser
+          SFTP_PASSWORD: testpass
           FORMAE_TEST_RUN_ID: ${{ github.run_id }}-${{ github.run_attempt }}
         run: make conformance-test
