@@ -223,7 +223,7 @@ func (p *Plugin) Create(ctx context.Context, req *resource.CreateRequest) (*reso
 	// Parse permissions string to os.FileMode
 	var perm os.FileMode = 0644
 	if props.Permissions != "" {
-		fmt.Sscanf(props.Permissions, "%o", &perm)
+		_, _ = fmt.Sscanf(props.Permissions, "%o", &perm)
 	}
 
 	// Start async upload - returns immediately with operation ID
@@ -319,7 +319,7 @@ func (p *Plugin) Update(ctx context.Context, req *resource.UpdateRequest) (*reso
 	if priorProps == nil || priorProps.Content != desiredProps.Content {
 		var perm os.FileMode = 0644
 		if desiredProps.Permissions != "" {
-			fmt.Sscanf(desiredProps.Permissions, "%o", &perm)
+			_, _ = fmt.Sscanf(desiredProps.Permissions, "%o", &perm)
 		}
 
 		// Use sync upload for update (blocking)
@@ -355,7 +355,7 @@ func (p *Plugin) Update(ctx context.Context, req *resource.UpdateRequest) (*reso
 	} else if priorProps.Permissions != desiredProps.Permissions {
 		// Only permissions changed
 		var perm os.FileMode = 0644
-		fmt.Sscanf(desiredProps.Permissions, "%o", &perm)
+		_, _ = fmt.Sscanf(desiredProps.Permissions, "%o", &perm)
 
 		if err := client.SetPermissions(req.NativeID, perm); err != nil {
 			return &resource.UpdateResult{

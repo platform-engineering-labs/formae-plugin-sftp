@@ -55,7 +55,7 @@ func NewClient(cfg Config) (*Client, error) {
 
 	sftpClient, err := sftp.NewClient(sshClient)
 	if err != nil {
-		sshClient.Close()
+		_ = sshClient.Close()
 		return nil, fmt.Errorf("sftp client failed: %w", err)
 	}
 
@@ -68,11 +68,19 @@ func NewClient(cfg Config) (*Client, error) {
 
 // Close closes the SFTP and SSH connections.
 func (c *Client) Close() error {
+	var errs []error
 	if c.sftpClient != nil {
-		c.sftpClient.Close()
+		if err := c.sftpClient.Close(); err != nil {
+			errs = append(errs, err)
+		}
 	}
 	if c.sshClient != nil {
-		c.sshClient.Close()
+		if err := c.sshClient.Close(); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	if len(errs) > 0 {
+		return errs[0]
 	}
 	return nil
 }
@@ -159,7 +167,7 @@ func (c *Client) ReadFile(path string) (*FileInfo, error) {
 	if err != nil {
 		return nil, fmt.Errorf("open failed: %w", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	content, err := io.ReadAll(f)
 	if err != nil {
@@ -213,7 +221,9 @@ func (c *Client) doUpload(op *Operation, content string, permissions os.FileMode
 
 	// Write content
 	_, err = f.Write([]byte(content))
-	f.Close()
+	if closeErr := f.Close(); closeErr != nil && err == nil {
+		err = closeErr
+	}
 	if err != nil {
 		c.completeOperation(op, StateFailure, fmt.Errorf("write failed: %w", err))
 		return
