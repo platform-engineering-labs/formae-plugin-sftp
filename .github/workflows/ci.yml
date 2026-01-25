@@ -68,6 +68,36 @@ jobs:
           pkl eval formae-plugin.pkl --format json > /dev/null
           echo "Manifest validated successfully"
 
+  # Integration tests run against real infrastructure.
+  # This job is disabled by default - enable it after configuring credentials.
+  integration-tests:
+    needs: [build, lint]
+    runs-on: ubuntu-latest
+    # Disabled by default - remove this condition after configuring credentials
+    if: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: "1.25"
+
+      - name: Set up Pkl
+        uses: pkl-community/setup-pkl@v0
+        with:
+          pkl-version: 0.30.0
+
+      # Configure credentials for your infrastructure here
+      # Example for SFTP:
+      # env:
+      #   SFTP_USERNAME: ${{ secrets.SFTP_USERNAME }}
+      #   SFTP_PASSWORD: ${{ secrets.SFTP_PASSWORD }}
+
+      - name: Run integration tests
+        run: make test-integration
+
   # Conformance tests run against real cloud resources.
   # This job is disabled by default - enable it after configuring credentials.
   #
