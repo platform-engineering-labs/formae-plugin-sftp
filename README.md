@@ -1,5 +1,7 @@
 # SFTP Plugin for formae
 
+[![CI](https://github.com/platform-engineering-labs/formae-plugin-sftp/actions/workflows/ci.yml/badge.svg)](https://github.com/platform-engineering-labs/formae-plugin-sftp/actions/workflows/ci.yml)
+
 A formae plugin for managing files on SFTP servers. This plugin was created as part of the [Plugin SDK Tutorial](https://docs.formae.io/plugin-sdk/tutorial/01-scaffold/).
 
 ## Installation
