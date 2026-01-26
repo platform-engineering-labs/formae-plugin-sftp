@@ -11,6 +11,6 @@ package {
 
 dependencies {
   ["formae"] {
-    uri = "package://hub.platform.engineering/plugins/pkl/schema/pkl/formae/formae@0.77.15-internal"
+    uri = "package://hub.platform.engineering/plugins/pkl/schema/pkl/formae/formae@0.77.16-internal"
   }
 }
