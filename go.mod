@@ -11,10 +11,6 @@ require (
 	golang.org/x/crypto v0.47.0
 )
 
-replace github.com/platform-engineering-labs/formae/pkg/plugin-conformance-tests => /home/jeroen/dev/pel/formae/pkg/plugin-conformance-tests
-
-replace github.com/platform-engineering-labs/formae/pkg/plugin => /home/jeroen/dev/pel/formae/pkg/plugin
-
 require (
 	ergo.services/actor/statemachine v0.0.0-20251202053101-c0aa08b403e5 // indirect
 	ergo.services/ergo v1.999.310 // indirect
