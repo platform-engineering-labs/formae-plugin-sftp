@@ -16,6 +16,7 @@ import (
 	"github.com/platform-engineering-labs/formae-plugin-sftp/pkg/asyncsftp"
 	"github.com/platform-engineering-labs/formae/pkg/plugin"
 	"github.com/platform-engineering-labs/formae/pkg/plugin/resource"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 // ErrNotImplemented is returned by stub methods that need implementation.
@@ -194,6 +195,12 @@ func (p *Plugin) LabelConfig() plugin.LabelConfig {
 // Create provisions a new resource.
 // Returns InProgress with a RequestID - poll Status() for completion.
 func (p *Plugin) Create(ctx context.Context, req *resource.CreateRequest) (*resource.CreateResult, error) {
+	// Get observability from context
+	log := plugin.LoggerFromContext(ctx)
+	metrics := plugin.MetricsFromContext(ctx)
+
+	log.Info("creating file resource", "label", req.Label)
+
 	// Parse file properties from request
 	props, err := parseFileProperties(req.Properties)
 	if err != nil {
@@ -228,6 +235,12 @@ func (p *Plugin) Create(ctx context.Context, req *resource.CreateRequest) (*reso
 
 	// Start async upload - returns immediately with operation ID
 	requestID := client.StartUpload(props.Path, props.Content, perm)
+
+	// Record metric for uploads started
+	metrics.Counter("sftp.uploads_started", 1,
+		attribute.String("path", props.Path))
+
+	log.Debug("upload started", "requestID", requestID, "path", props.Path)
 
 	return &resource.CreateResult{
 		ProgressResult: &resource.ProgressResult{
