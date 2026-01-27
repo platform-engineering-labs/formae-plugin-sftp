@@ -30,3 +30,6 @@ dist/
 
 # Handoffs (local development notes)
 .handoffs/
+
+# Claude Code
+.claude/
