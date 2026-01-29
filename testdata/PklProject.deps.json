@@ -3,9 +3,9 @@
   "resolvedDependencies": {
     "package://hub.platform.engineering/plugins/pkl/schema/pkl/formae/formae@0": {
       "type": "remote",
-      "uri": "projectpackage://hub.platform.engineering/plugins/pkl/schema/pkl/formae/formae@0.77.16-internal",
+      "uri": "projectpackage://hub.platform.engineering/plugins/pkl/schema/pkl/formae/formae@0.80.0",
       "checksums": {
-        "sha256": "b37be330f30cddf539251cc2fc9e49a5a5981198462acf2caadd1c815c243463"
+        "sha256": "ea5859ae4fb2e98d4ccf55b9d87363741145f92c25055533ee657ff2427d31e7"
       }
     },
     "package://localhost/sftp@0": {
