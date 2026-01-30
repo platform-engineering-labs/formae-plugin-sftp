@@ -14,6 +14,11 @@ on:
         required: false
         default: 'false'
         type: boolean
+      run_conformance_main:
+        description: 'Run conformance tests against formae main branch'
+        required: false
+        default: 'false'
+        type: boolean
       formae_version:
         description: 'Formae version to test against (default: latest)'
         required: false
@@ -159,7 +164,7 @@ jobs:
   conformance-tests-main:
     needs: [build, lint, pkl-validate, integration-tests]
     runs-on: ubuntu-latest
-    if: github.event_name == 'schedule'  # Only on nightly
+    if: github.event_name == 'schedule' || github.event.inputs.run_conformance_main == 'true'
     timeout-minutes: 90
 
     steps:
