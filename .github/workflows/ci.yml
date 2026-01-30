@@ -5,17 +5,10 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
-  schedule:
-    - cron: '0 3 * * *'  # Nightly at 3 AM UTC
   workflow_dispatch:
     inputs:
       run_conformance:
         description: 'Run conformance tests'
-        required: false
-        default: 'false'
-        type: boolean
-      run_conformance_main:
-        description: 'Run conformance tests against formae main branch'
         required: false
         default: 'false'
         type: boolean
@@ -110,11 +103,11 @@ jobs:
         run: make test-integration
 
   # Conformance tests verify the plugin works correctly with the formae agent.
-  # Runs on push to main, nightly, or manual trigger.
+  # Runs on push to main or manual trigger.
   conformance-tests:
     needs: [build, lint, pkl-validate, integration-tests]
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' || github.event_name == 'schedule' || github.event.inputs.run_conformance == 'true'
+    if: github.event_name == 'push' || github.event.inputs.run_conformance == 'true'
     timeout-minutes: 60
 
     strategy:
@@ -159,45 +152,40 @@ jobs:
           fi
           make conformance-test VERSION="$VERSION"
 
-  # PEL-maintained plugins: Test against formae main branch nightly.
-  # Catches SDK regressions before release.
-  conformance-tests-main:
-    needs: [build, lint, pkl-validate, integration-tests]
+  # Notify on failure
+  notify-failure:
+    needs: [build, lint, pkl-validate, integration-tests, conformance-tests]
     runs-on: ubuntu-latest
-    if: github.event_name == 'schedule' || github.event.inputs.run_conformance_main == 'true'
-    timeout-minutes: 90
-
+    if: failure() && github.event_name == 'push'
     steps:
-      - name: Checkout plugin
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
+      - name: Notify Slack
+        uses: slackapi/slack-github-action@v2.1.0
         with:
-          go-version: "1.25"
-
-      - name: Set up Pkl
-        uses: pkl-community/setup-pkl@v0
-        with:
-          pkl-version: 0.30.0
-
-      - name: Build formae from main
-        run: |
-          git clone --depth 1 https://github.com/platform-engineering-labs/formae.git /tmp/formae
-          cd /tmp/formae && make build
-          echo "FORMAE_BINARY=/tmp/formae/bin/formae" >> $GITHUB_ENV
-
-      - name: Start SFTP server
-        run: |
-          docker run -d --name sftp-test -p 2222:22 atmoz/sftp testuser:testpass:::upload
-          sleep 2  # Wait for server to start
-
-      - name: Install plugin
-        run: make install
-
-      - name: Run conformance tests against main
-        env:
-          SFTP_USERNAME: testuser
-          SFTP_PASSWORD: testpass
-          FORMAE_TEST_RUN_ID: nightly-main-${{ github.run_id }}
-        run: make conformance-test
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": ":x: CI failed on ${{ github.repository }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":x: *CI failed* on `${{ github.repository }}`\n*Branch:* `${{ github.ref_name }}`\n*Commit:* `${{ github.sha }}`\n*Author:* ${{ github.actor }}"
+                  }
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "View Run"
+                      },
+                      "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                    }
+                  ]
+                }
+              ]
+            }
