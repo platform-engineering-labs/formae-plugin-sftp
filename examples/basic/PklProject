@@ -1,12 +1,10 @@
 amends "pkl:Project"
 
 dependencies {
-  // Reference local plugin schema during development
-  // The alias must match the package name defined in schema/pkl/PklProject
-  ["sftp"] = import("../../schema/pkl/PklProject")
-
-  // Formae schema - fetched from public registry
   ["formae"] {
-    uri = "package://hub.platform.engineering/plugins/pkl/schema/pkl/formae/formae@0.80.0"
+    uri = "package://hub.platform.engineering/plugins/pkl/schema/pkl/formae/formae@0.82.0"
+  }
+  ["sftp"] {
+    uri = "package://hub.platform.engineering/plugins/sftp/schema/pkl/sftp/sftp@0.1.0"
   }
 }
