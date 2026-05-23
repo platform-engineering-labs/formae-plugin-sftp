@@ -29,6 +29,15 @@ all: build
 build:
 	@mkdir -p schema/pkl && echo "$(PLUGIN_VERSION)" > schema/pkl/VERSION
 	$(GO) build $(GOFLAGS) -o bin/$(BINARY) .
+	@MIN_VERSION=$$($(GO) list -m -f '{{.Dir}}' github.com/platform-engineering-labs/formae/pkg/plugin 2>/dev/null | xargs -I{} grep 'MinFormaeVersion' {}/version.go 2>/dev/null | grep -oE '"[0-9]+\.[0-9]+\.[0-9]+"' | tr -d '"'); \
+	if [ -n "$$MIN_VERSION" ]; then \
+		echo "Updating minFormaeVersion to $$MIN_VERSION"; \
+		if [ "$$(uname)" = "Darwin" ]; then \
+			sed -i '' 's/^minFormaeVersion = .*/minFormaeVersion = "'"$$MIN_VERSION"'"/' formae-plugin.pkl; \
+		else \
+			sed -i 's/^minFormaeVersion = .*/minFormaeVersion = "'"$$MIN_VERSION"'"/' formae-plugin.pkl; \
+		fi; \
+	fi
 
 ## test: Run all tests
 test:
