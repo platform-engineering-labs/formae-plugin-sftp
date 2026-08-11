@@ -28,10 +28,16 @@ var ErrNotImplemented = errors.New("not implemented")
 // =============================================================================
 
 // TargetConfig holds SFTP target settings.
-// Contains only the deployment location, NOT credentials.
-// Credentials are provided via environment variables.
+//
+// Credentials may be declared here, in which case they may originate from a
+// formae-managed secret that the agent resolves live before every call, so
+// rotating one needs no agent restart. Each is a pointer so a declared but
+// empty credential is distinguishable from an absent one. When absent, the
+// credential comes from the environment instead.
 type TargetConfig struct {
-	URL string `json:"url"` // sftp://host:port
+	URL      string  `json:"url"` // sftp://host:port
+	Username *string `json:"Username,omitempty"`
+	Password *string `json:"Password,omitempty"`
 }
 
 // parseTargetConfig extracts SFTP target settings from the request.
@@ -64,14 +70,38 @@ func parseURL(sftpURL string) (host string, port string, err error) {
 	return host, port, nil
 }
 
-// getCredentials reads SFTP credentials from environment variables.
-func getCredentials() (username, password string, err error) {
-	username = os.Getenv("SFTP_USERNAME")
-	password = os.Getenv("SFTP_PASSWORD")
-	if username == "" || password == "" {
-		return "", "", fmt.Errorf("SFTP_USERNAME and SFTP_PASSWORD must be set")
+// getCredentials resolves the SFTP credentials for a target.
+//
+// Each credential is taken from the target config when declared there and from
+// the environment otherwise, so a literal username can sit beside a password
+// sourced from a secret. A declared credential is used as given: falling back
+// from an empty one would log in as whoever the environment names, which is a
+// silent identity switch rather than a recovery.
+func getCredentials(cfg *TargetConfig) (username, password string, err error) {
+	username, err = resolveCredential(cfg.Username, "SFTP_USERNAME")
+	if err != nil {
+		return "", "", err
+	}
+	password, err = resolveCredential(cfg.Password, "SFTP_PASSWORD")
+	if err != nil {
+		return "", "", err
 	}
 	return username, password, nil
+}
+
+// resolveCredential picks the declared value over the environment variable, and
+// reports which source was expected to supply the missing value.
+func resolveCredential(declared *string, envVar string) (string, error) {
+	if declared != nil {
+		if *declared == "" {
+			return "", fmt.Errorf("%s in target config is empty; a declared credential is used as given and never falls back to the environment", envVar)
+		}
+		return *declared, nil
+	}
+	if value := os.Getenv(envVar); value != "" {
+		return value, nil
+	}
+	return "", fmt.Errorf("no SFTP credential found; set it in the target config or via %s", envVar)
 }
 
 // =============================================================================
@@ -166,8 +196,8 @@ func (p *Plugin) getClient(targetConfig json.RawMessage) (*asyncsftp.Client, err
 		return nil, err
 	}
 
-	// Get credentials from environment
-	username, password, err := getCredentials()
+	// Credentials come from the target config when declared, the environment otherwise
+	username, password, err := getCredentials(cfg)
 	if err != nil {
 		return nil, err
 	}

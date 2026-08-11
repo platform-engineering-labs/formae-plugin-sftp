@@ -7,6 +7,13 @@ module sftp
 import "@formae/formae.pkl"
 
 /// Target configuration for SFTP servers.
+///
+/// Credentials can be supplied in two ways:
+///   1. Via `username` and `password`, which accept a resolvable and so can be
+///      sourced from a formae-managed secret:
+///        password = sftpPassword.res.secretValue
+///   2. Via the SFTP_USERNAME and SFTP_PASSWORD environment variables, used for
+///      whichever of the two is not declared here.
 open class Config {
     /// Type identifier for the SFTP plugin namespace.
     hidden fixed type: String = "SFTP"
@@ -14,8 +21,29 @@ open class Config {
     /// SFTP server URL (e.g., "sftp://localhost:2222")
     url: String
 
+    /// The login username. Accepts a literal string or a resolvable.
+    /// Falls back to SFTP_USERNAME when omitted.
+    ///
+    /// Mutable, like `password`: how the agent authenticates is not where the
+    /// files live, so rotating a credential updates the target rather than
+    /// replacing it.
+    @formae.ConfigFieldHint { createOnly = false }
+    hidden username: (String|formae.Resolvable)?
+
+    /// The password for `username`. Accepts a literal string or a resolvable
+    /// (e.g. sourced from a formae-managed secret, which the agent resolves live
+    /// on every call, so rotating it needs no agent restart).
+    ///
+    /// When set it is used as given: a password that resolves to an empty value
+    /// is an error rather than a silent fall back to SFTP_PASSWORD, which would
+    /// log in as whoever that names. Omit it to use the environment deliberately.
+    @formae.ConfigFieldHint { createOnly = false }
+    hidden password: (String|formae.Resolvable)?
+
     fixed Type: String = type
     fixed Url: String = url
+    fixed Username: (String|formae.Resolvable)? = username
+    fixed Password: (String|formae.Resolvable)? = password
 }
 
 /// A text file on an SFTP server.
