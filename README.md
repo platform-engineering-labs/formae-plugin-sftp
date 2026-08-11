@@ -27,14 +27,34 @@ new formae.Target {
 
 ### Credentials
 
-The plugin reads SFTP credentials from environment variables:
+Credentials can come from the target config, which is the recommended form
+because both fields accept a resolvable and can therefore be sourced from a
+formae-managed secret. The agent resolves them live before every call, so
+onboarding a server or rotating a password needs no agent restart:
+
+```pkl
+config = new sftp.Config {
+  url = "sftp://hostname:22"
+  username = "formae"
+  password = sftpPassword.res.secretValue
+}
+```
+
+A declared credential is used as given: one that resolves to an empty value is
+an error rather than a silent fall back, which would otherwise log in as
+whoever the environment names.
+
+Each credential falls back independently, so a literal username can sit beside
+a password sourced from a secret. Whichever is not declared comes from the
+environment:
 
 | Variable | Description |
 |----------|-------------|
 | `SFTP_USERNAME` | SFTP username |
 | `SFTP_PASSWORD` | SFTP password |
 
-Set these environment variables before starting the formae agent.
+Set those environment variables before starting the formae agent if you are
+not declaring the matching credential in the target config.
 
 ## Examples
 
